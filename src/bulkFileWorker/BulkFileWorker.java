@@ -1,4 +1,4 @@
-package bulkfileworker;
+package bulkFileWorker;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 
 public class BulkFileWorker {
 
-	private static final String version = new String("0.2");  
+	private static final String version = new String("0.3.0");  
 	private static final int SKIP = 0;
 	private static final int OVERWRITE = 1;
 	private static final int MOVE = 2;
@@ -37,6 +37,7 @@ public class BulkFileWorker {
 	private static int choosenCopyOption= -1;
 	private static String fileExtension = null;
 	
+	private static String subPathString = "";
 	
 	
 	private static void info(String infoLogString)
@@ -50,55 +51,135 @@ public class BulkFileWorker {
 	}
 	
 	
+	/**
+	 * do some sanity check
+	 * @return true -> check ok, false check not ok
+	 */
+	private static boolean isSanityCheckOk()
+	{
+		boolean isCheckOk=true;
+		if (inputBasePath == null)
+		{
+			System.out.println("ERROR: inputBasePath not set");
+			isCheckOk = false;
+		}
+		if (outputBasePath == null)
+		{
+			System.out.println("ERROR: outputBasePath not set");
+			isCheckOk = false;
+		}
+		if (choosenCopyOption == -1)
+		{
+			System.out.println("ERROR: mode not set");
+			isCheckOk = false;
+		}
+		return isCheckOk;
+	}
+	
 	private static void printUsage()
 	{
 		System.out.println("\n"
 				+ "usage:\n"
 				+ "version:" + version + "\n\n"
-				+ "java -jar bulkFileWorker.jar <sourceRoot> <targetRoot> <copyOption> <fileExtension>\n"
-				+ "  sourceRoot: root directory of source. Subdirectories will be searched\n"
-				+ "  targetRoot: root directory of target. Following structure will be created:"
-				+ "                targetRoot/yyyy/yyyy-mm-dd\n"
-				+ "  copyOption: c - copy and replace if existing\n"
-				+ "              m - move and skip if existing\n"
-				+ "              s - copy and skip if existing\n"
-				+ "  fileExtension: only process files matching the given extension. Without dot. e.g: mp4");
+				+ "java -jar bulkFileWorker.jar <OPTIONS>"
+				+ "OPTIONS:"
+				+ "   mode=<copyOption> ext=<fileExtension> subdir=<subDirectory\n"
+				+ "  source=<sourceRoot>: root directory of source. Subdirectories will be searched\n"
+				+ "  target=<targetRoot>: root directory of target. Following structure will be created:"
+				+ "                       targetRoot/yyyy/yyyy-mm-dd/<subDir>\n"
+				+ "  mode=c             : copy and replace if existing\n"
+				+ "       m             : move and skip if existing\n"
+				+ "       s             : copy and skip if existing\n"
+				+ " ext=<fileExtension> : only process files matching the given extension. Without dot. e.g: mp4)"
+				+ " subdir=<subDir>     : static subdir path is added at the end of the generated target path. (eg. targetRoot/yyyy/yyyy-mm-dd/subDir");
 	}
 	
 	public static void main(String[] args) 
 	{
 		
 		
-		if (args.length != 4)
+//		if (args.length != 4)
+//		{
+//			error("bad number of arguments!\n"
+//					+ "exiting.");
+//			printUsage();
+//			return;
+//		}
+		
+		for (int i=0; i< args.length; i++)
 		{
-			error("bad number of arguments!\n"
-					+ "exiting.");
+			String kv[] = args[i].split("=");
+			if (kv[0].toLowerCase().equals("source"))
+			{
+				inputBasePath = new String (kv[1]);
+			}
+			else if (kv[0].toLowerCase().equals("target"))
+			{
+				outputBasePath = new String (kv[1]);
+			}
+			else if (kv[0].toLowerCase().equals("mode"))
+			{
+				if (kv[1].toLowerCase().equals("m"))
+				{
+					choosenCopyOption = MOVE;
+				}
+				else if (kv[1].toLowerCase().equals("c"))
+				{
+					choosenCopyOption = OVERWRITE;
+				}
+				else if (kv[1].toLowerCase().equals("s"))
+				{
+					choosenCopyOption = SKIP;
+				}
+			}
+			else if (kv[0].toLowerCase().equals("ext"))
+			{
+				fileExtension = new String (kv[1]);
+			}
+			else if (kv[0].toLowerCase().equals("subdir"))
+			{
+				subPathString = "/" + new String (kv[1]);
+			}
+
+		}
+		
+		System.out.println("options:");
+		System.out.println("inputBasePath=" + inputBasePath);
+		System.out.println("outputBasePath=" + outputBasePath);
+		System.out.println("choosenCopyOption=" + choosenCopyOption);
+		System.out.println("fileExtension=" + fileExtension);
+		System.out.println("subPathString=" + subPathString);
+		
+		if (!isSanityCheckOk())
+		{
+			System.out.println ("aborting because of errors");
 			printUsage();
 			return;
 		}
 		
-		
 		directoryList = new HashSet<String>();
 		copyList = new HashSet<FileCopy>();
+//		
+//		// parse cmd arguments
+//		inputBasePath = new String(args[0]);
+//		outputBasePath = new String(args[1]);
+//		
+//		if (args[2].toLowerCase().equals("m"))
+//		{
+//			choosenCopyOption = MOVE;
+//		}
+//		else if (args[2].toLowerCase().equals("s"))
+//		{
+//			choosenCopyOption = SKIP;
+//		}
+//		else if (args[2].toLowerCase().equals("c"))
+//		{
+//			choosenCopyOption = OVERWRITE;
+//		}
+//		else if (args[3.toLowerCase().equals])
+//		
+//		fileExtension = new String (args[3]);
 		
-		// parse cmd arguments
-		inputBasePath = new String(args[0]);
-		outputBasePath = new String(args[1]);
-		
-		if (args[2].toLowerCase().equals("m"))
-		{
-			choosenCopyOption = MOVE;
-		}
-		else if (args[2].toLowerCase().equals("s"))
-		{
-			choosenCopyOption = SKIP;
-		}
-		else if (args[2].toLowerCase().equals("c"))
-		{
-			choosenCopyOption = OVERWRITE;
-		}
-		
-		fileExtension = new String (args[3]);
 		
 		
 		
@@ -329,7 +410,7 @@ public class BulkFileWorker {
 				if (myFile.toString().endsWith(fileExtension)) 
 				{
 					// remember to create the directory later
-					String outputDir = outputBasePath + "/" + attr.lastModifiedTime().toString().substring(0,4) + "/" + attr.lastModifiedTime().toString().substring(0,10);
+					String outputDir = outputBasePath + "/" + attr.lastModifiedTime().toString().substring(0,4) + "/" + attr.lastModifiedTime().toString().substring(0,10) + subPathString;
 					directoryList.add(outputDir);
 					// remember to copy the file later
 					copyList.add(new FileCopy(myFile.toString(), outputDir + "/" +  getFileNameFromPath(myFile)));

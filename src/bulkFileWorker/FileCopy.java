@@ -1,4 +1,4 @@
-package bulkfileworker;
+package bulkFileWorker;
 
 public class FileCopy 
 {
